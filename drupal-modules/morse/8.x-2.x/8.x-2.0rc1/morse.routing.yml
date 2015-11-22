@@ -1,0 +1,16 @@
+morse.morse:
+    path: '/morse'
+    defaults:
+        _controller: '\Drupal\morse\Controller\MorseController::morse'
+        _title: 'Morse converter'
+        type: 'morse'
+    requirements:
+        _permission: 'access_morse'
+morse.alpha:
+    path: '/morse/alpha'
+    defaults:
+        _controller: '\Drupal\morse\Controller\MorseController::morse'
+        _title: 'Alphanumeric converter'
+        type: 'alpha'
+    requirements:
+        _permission: 'access_morse'

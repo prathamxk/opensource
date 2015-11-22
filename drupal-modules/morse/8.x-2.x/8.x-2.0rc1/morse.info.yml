@@ -1,0 +1,11 @@
+name: Morse
+type: module
+description: converts the alphanumeric values into morse code and Vice versa.
+# core: "8.x"
+# project: "morse"
+
+# Information added by Drupal.org packaging script on 2015-10-23
+version: '8.x-2.x-dev'
+core: '8.x'
+project: 'morse'
+datestamp: 1445612643
