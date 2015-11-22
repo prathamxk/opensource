@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * PHP version 5
+ * Description of Unique Download
+ * @file installs unique_download download table.
+ * @category Install
+ * @package Other
+ * @author prathK <prathK@drupal.org>
+ * @license gpl3.0 www.gnu.org/licenses/gpl-3.0.en.html
+ * Description of unique_download module :
+ * Create dynamic links for downloading the files which needs secure URL.
+ * @link prathK@git.drupal.org:sandbox/prathK/1280294.git
+ */
+ 
+/**
+ * Implementation of hook_schema().
+ * @return $schema
+ */
+function Unique_Download_schema() 
+{
+    $schema['unique_download'] = array(
+    'fields' => array(
+    'ufid' => array('type' => 'serial', 'unsigned' => true, 'not null' => true),
+    'fid' => array('type' => 'int', 'length' => 40,
+                   'unsigned' => true, 'not null' => true),
+    'uid' => array('type' => 'int', 'length' => 40,
+                   'unsigned' => true, 'not null' => false),
+    'email' => array('type' => 'varchar',
+                   'length' => 128, 'not null' => false ),
+    'downloadkey' => array('type' => 'varchar',
+                   'length' => 256, 'not null' => false ),
+    'downloads' => array('type' => 'int', 'length' => 10, 'not null' => false),
+    'expiry' => array('type' => 'varchar', 'length' => 64, 'not null' => false)
+    ),
+    'primary key' => array('ufid'),
+    );
+    return $schema;
+}
+  
+/**
+ * Implement hook_install
+ * @return nothing
+ */
+function Unique_Download_install() 
+{
+    drupal_install_schema('unique_download'); 
+    drupal_set_message('unique_download successfully installed');
+}  
+
+/**
+ * Implement hook_uninstall
+ * @return nothing
+ */ 
+function Unique_Download_uninstall() 
+{
+    drupal_uninstall_schema('unique_download'); 
+    drupal_set_message('unique_download successfully uninstalled');
+} 

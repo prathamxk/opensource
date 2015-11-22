@@ -1,0 +1,397 @@
+<?php
+
+/**
+ * PHP version 5
+ * Description of Unique Download
+ * @category Module
+ * @package Other
+ * @author prathK <prathK@drupal.org>
+ * @license gpl3.0 www.gnu.org/licenses/gpl-3.0.en.html
+ * Description of unique_download module :
+ * Create dynamic links for downloading the files which needs secure URL.
+ * version: 5.x
+ * @link prathK@git.drupal.org:sandbox/prathK/1280294.git
+ */
+
+/**
+ * Implements of hook_help
+ * @param string $path the string with help path.
+ * @param string $arg  the argument in URI for help.
+ * @return string
+ */
+function Unique_Download_help($path, $arg) 
+{
+    switch ($path) {
+    // Main module help for the block module
+    case 'admin/help#unique_download':
+        $output = '<p>' .
+        t('This module used to create the unique_download downloads.');
+        return $output;
+    }    
+}
+
+/**
+ * Implementation of hook_perm
+ * @return array()
+ */
+function Unique_Download_perm() 
+{
+    return array('access unique_download download',
+                 'administer unique_download download');    
+}
+
+/**
+ * Implementation of hook_menu
+ * @return array()
+ */
+function Unique_Download_menu() 
+{
+    $items = array();
+    $items['admin/settings/unique_download'] = array(
+    'title' => 'unique_download URL Settings', 
+    'page callback' => 'Unique_Download_settings', 
+    'access arguments' => array('administer unique_download download'),
+    'description' => t('Configuration page for Unique Download module.'), 
+    'type' => MENU_NORMAL_ITEM,
+    );
+    $items['admin/settings/unique_download/edit'] = array(
+    'title' => 'Edit', 
+    'page callback' => 'Unique_Download_Settings', 
+    'access arguments' => array('administer unique_download download'), 
+    'type' => MENU_LOCAL_TASK,
+    );
+    $items['admin/settings/unique_download/generate'] = array(
+    'title' => 'Generate unique_download URL', 
+    'page callback' => 'Generate_url', 
+    'access arguments' => array('administer unique_download download'), 
+    'type' => MENU_LOCAL_TASK,
+    );
+    $items['admin/settings/unique_download/download'] = array(
+    'title' => 'Show unique_download URLs', 
+    'page callback' => 'Unique_Download_links', 
+    'access arguments' => array('administer unique_download download'), 
+    'type' => MENU_LOCAL_TASK,
+    );
+    $items['unique/key/%'] = array(
+    'title' => 'Your download link', 
+    'page callback' => 'Unique_Download_key',
+    'access arguments' => array('access unique_download download'), 
+    'type' => MENU_CALLBACK,
+    );
+    return $items;
+    
+}
+
+/**
+ * Calling drupal get form through this function.
+ * @return array of form.
+ */
+function Unique_Download_settings() 
+{
+    return drupal_get_form('Unique_Download_settings_form');
+}
+
+/**
+ * Implementation of hook_form.
+ * @param array $form_states array of form values.
+ * @return array 
+ */
+function Unique_Download_Settings_form(&$form_states) 
+{
+    $types = node_get_types('names');
+    $default = null;
+
+    // Get default values for the settings
+    $multiple = variable_get('unique_download_multidownload', $default); 
+    $ctypes_a = variable_get('unique_download_allowed_content_types', $default);
+    $download_path = variable_get('unique_download_download_path', $default);
+
+    $form['multiple_allowed'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Multiple Download'),
+    '#default_value' => $multiple
+    );
+  
+    $form['content_type'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Allowed Content types'),
+    '#options' => $types,
+    '#default_value' => $ctypes_a
+    );
+
+    $form['download_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Path to the Download Folder'),
+    '#description' => t(
+        "Path relative to the drupal's files directory till download
+                        directory. Ex. files/../unique_download.
+                        <br>Note: Do not use slash at the end/start."
+    ),
+    '#length' => 8,
+    '#maxlength' => 100,
+    '#required' => true,
+    '#default_value' => $download_path
+    );
+ 
+    $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+    );
+  
+    return $form;
+}
+
+/**
+ * Implements of hook_form_submit.
+ * @param array $form        form elements array.
+ * @param array $form_states form state values array.
+ * @return void
+ */
+function Unique_Download_Settings_Form_submit( $form, &$form_states) 
+{
+  
+    $multiple = $form_states['values']['multiple_allowed'];
+    $ctypes_a = $form_states['values']['content_type'];
+    $download_path = $form_states['values']['download_path'];
+
+    // unique_download download configration variables
+    variable_set('unique_download_multidownload', $multiple);
+    variable_set('unique_download_allowed_content_types', $ctypes_a);
+    variable_set('unique_download_download_path', $download_path);
+    
+    drupal_set_message('Settings saved successfully.');
+}
+
+/**
+ * Calling drupal get form through this function.
+ * @return array of form.
+ */
+function Generate_url() 
+{
+    return drupal_get_form('Unique_Download_generate');
+}
+
+/**
+ * Implements of hook_form.
+ * @param array $form_states form state values array.
+ * @return array()
+ */
+function Unique_Download_generate(&$form_states) 
+{
+    $form['node_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Node id to which file is associated.'),
+    '#required' => true
+    );
+
+    $form['user_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Enter the email associated.'),
+    '#required' => true
+    );
+  
+    $form['expiry_time'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Enter the url expiry time in terms of days.'),
+    '#required' => true,
+    '#size' => 10,
+    '#maxlength' => 3
+    );
+  
+    $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+    );
+  
+    return $form;
+}
+
+/**
+ * Implements of hook_form_submit.
+ * @param array $form        form elements array.
+ * @param array $form_states form state values array.
+ * @return void
+ */
+function Unique_Download_Generate_submit( $form, &$form_states ) 
+{
+    global $user;
+    $result = db_query(
+        "SELECT * FROM {upload} WHERE nid = %d",
+        $form_states['values']['node_id']
+    );
+    $fids = array();
+    if (!empty($result) ) {
+        while ( $row = db_fetch_object($result) ) {
+            $fileDet[$row->fid]['fid'] = $row->fid;
+            $fileDet[$row->fid]['uid'] = $user->uid;
+            $fileDet[$row->fid]['email'] = $form_states['values']['user_email'];
+            $fileDet[$row->fid]['expiry'] = $form_states['values']['expiry_time'];
+        }
+    }
+  
+    if (!empty($fileDet)) { 
+        foreach ( $fileDet as $key => $value ) { 
+            $strKey = Unique_Download_createkey();
+
+            // to insert the values for dynamic url  
+            db_query(
+                "INSERT INTO {unique_download} VALUES
+                ('%d','%d', '%d', '%s', '%s', '%d', '%s')",
+                "", $value['fid'], $value['uid'], $value['email'], $strKey, 0,
+                time()+(60*60*24*$value['expiry'])
+            );
+        }
+    }
+    drupal_set_message('Download link successfully created.');
+}
+  
+/**
+ * Function to generate the unique download key
+ * @return String
+ **/
+function Unique_Download_createkey() 
+{
+    //create a random key
+    $strKey = md5(microtime());
+  
+    //check to make sure this key isnt already in use
+    $resCheck = db_query_range(
+        "SELECT count(*) as counter FROM {unique_download}
+         WHERE downloadkey = '%s'", 0, 1, $strKey
+    );
+    if ($resCheck ) {
+        $arrCheck = db_fetch_array($resCheck); 
+    }
+    if ($arrCheck['counter'] ) {
+        //key already in use
+        return createkey();
+    } else {
+        //key is OK
+        return $strKey;
+    }
+}
+
+
+/**
+ * Function to view all the keys in unique_download table with their status.
+ * @return String
+ **/
+function Unique_Download_links() 
+{
+    global $base_url;
+    $results = db_query("SELECT * FROM {unique_download}");
+    $header = array('ufid', 'fid', 'email', 'downloaded',
+                    'expiry', 'user', 'downloadlink');
+    $data = array();
+    while ( $row = db_fetch_array($results) ) {
+        $fileuser = user_load(array("uid" => $row['uid']));
+        $data[$row['ufid']] = $row;
+        $data[$row['ufid']]['user'] = $fileuser->name;
+        $uniqueURL = $base_url . "/unique/key/" . $data[$row['ufid']]['downloadkey'];
+        $data[$row['ufid']]['downloadlink'] = l("Unique URL", $uniqueURL);
+        $data[$row['ufid']]['expiry'] = date('m/d/Y', $row['expiry']);
+        unset($data[$row['ufid']]['uid']);
+        unset($data[$row['ufid']]['downloadkey']);
+    }
+    $output = theme_table($header, $data);
+    return $output;
+}
+
+/**
+ * Function to view all the keys in unique_download table with their status.
+ * @return String
+ **/
+function Unique_Download_key() 
+{
+    $downloadkey = arg(2);
+    if (!isset($downloadkey) ) {
+        return drupal_set_message("The key entered is invalid");
+    } else {
+        Unique_Download_verifykey($downloadkey);
+    }
+}
+
+/**
+ * Function to verify the key once user hits the URI
+ * @param String $key Encrypted string to be verified from URI.
+ * @return String
+ **/
+function Unique_Download_verifykey($key) 
+{   
+    global $base_url;
+    // Get default values for the settings
+    $multiple = variable_get('unique_download_multidownload', ""); 
+    $ctypes_a = variable_get('unique_download_allowed_content_types', "");
+    $download_path = variable_get('unique_download_download_path', "");
+
+    $strDownloadFolder = 'sites/default/' . $download_path . '/';
+  
+    if (!empty($key) ) {
+        //check the DB for the key
+        $resCheck = db_query_range(
+            "SELECT ot.fid,ot.downloads,ot.expiry,f.filename 
+                        FROM {unique_download} ot, {files} f 
+                        WHERE ot.downloadkey = '%s' 
+                        AND f.status = 1 ", $key, 0, 1
+        );
+        $arrCheck = db_fetch_array($resCheck);
+        if (!empty($arrCheck['filename']) ) {
+            //check that the download time hasnt expired
+            if ($arrCheck['expiry']>=time() ) {
+                if (!$arrCheck['downloads'] OR $multiple ) {
+                    //everything is hunky dory - check the file exists
+                    // and then let the user download it
+                    
+                    $strDownload = $strDownloadFolder . $arrCheck['filename'];
+                    if (file_exists($strDownload) ) {
+                        //get the file content
+                        $strFile = file_get_contents($strDownload);
+                        //set the headers to force a download
+                        header("Content-type: application/force-download");
+                        header(
+                            "Content-Disposition: attachment; filename=\""
+                            . str_replace(" ", "_", $arrCheck['filename']) . "\""
+                        );
+                        //echo the file to the user
+                        echo $strFile;
+                        //update the DB to say this file has been downloaded
+                        db_query(
+                            "UPDATE {unique_download} SET downloads = downloads+1
+                                 WHERE downloadkey ='%s' LIMIT 1", $key
+                        );
+                        exit;
+                    } else {
+                        drupal_set_message("We couldn't find the file.");
+                        drupal_goto($base_url);
+                    }
+                } else {
+                    // this file has already been downloaded
+                    // and multiple downloads are not allowed
+                    drupal_set_message("This file has already been downloaded.");
+                    drupal_goto($base_url);
+                }
+            } else {
+                //this download has passed its expiry date
+                drupal_set_message(
+                    "This download has expired.
+                                   Please contact Administrator."
+                );
+                drupal_goto($base_url);
+            }
+        } else {
+            //the download key given didnt match anything in the DB
+            drupal_set_message(
+                "No file was found to download.
+                               Please contact Administrator."
+            );
+            drupal_goto($base_url);
+        }
+    } else {
+        //No download key wa provided to this script
+        drupal_set_message(
+            "No download key was provided.
+                           Please contact Administrator."
+        );
+        drupal_goto($base_url);
+    }
+} 
