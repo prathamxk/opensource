@@ -6,11 +6,11 @@
 def draw_game():
     # when clearing the screen we can use the main screen object initialized in this module
     clear_screen(main_screen)
-    ...
+    pass
 def clear_screen(screen):
-    ...
+    pass
 class Screen():
-    ...
+    pass
 
 # initialize main_screen as as singleton
 main_screen = Screen()
